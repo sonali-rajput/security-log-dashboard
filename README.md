@@ -2,6 +2,8 @@
 
 A comprehensive web-based dashboard for analyzing Apache web server security logs, built using AWS services, Elasticsearch, and Flask.
 
+![Dashboard](images/dashboard/security-log-landingpage.png)
+
 ## Project Overview
 
 This Security Log Analysis Dashboard processes and visualizes Apache web server logs to provide security insights and identify potential threats. The dashboard offers a comprehensive view of server activity, error patterns, and potential security incidents through intuitive visualizations.
@@ -47,5 +49,95 @@ The system follows an ETL (Extract, Transform, Load) pipeline architecture:
 
 1. **Clone the repository**
   ```bash
-  git clone https://github.com/yourusername/security-log-dashboard.git
+  git clone https://github.com/sonali-rajput/security-log-dashboard.git
   cd security-log-dashboard
+  ```
+
+2. **Create a virtual environment and install dependencies**
+  ```bash
+  python -m venv venv
+  venv\Scripts\activate
+  pip install -r requirements.txt
+  ```
+3. **Do the same for Flask as well**
+  ```bash
+  cd security-dashboard
+  python -m venv venv
+  venv\Scripts\activate
+  pip install -r requirements.txt
+  ```
+
+4. **Set up AWS resources**
+
+### Part 1: Extract
+
+- Create an IAM Role for whole project (Use cases for other AWS services : Select Glue) <br>
+![Dashboard](images/aws-ss/iam-role-for-glue-service.png)
+<br>
+
+- Create an S3 bucket with a databse folder
+![S3-overview](images/aws-ss/s3-bucket-w.png)
+<br>
+
+- Inside the database folder create folders for raw and transformed data
+![db-raw-tf](images/aws-ss/s3-db-raw-tf-folder.png)
+<br>
+
+- Upload Apache logs to the raw data folder
+![db-raw-txt](images/aws-ss/s3-db-raw-txt-file.png)
+<br>
+
+- Create a Glue database and set up a crawler to catalog the raw logs
+![glue-db](images/aws-ss/glue-db.png)
+<br>
+
+- Run the crawler for raw logs you just created. After crawler is successfully completed. Let’s check the table and schema of our table.
+![schema-raw](images/aws-ss/schema-of-raw-using-crawler.png)
+<br>
+
+### Part 2: Transform
+- Create ETL Job in AWS Glue (here we create Notebook, you can use Glue ETL scripts as well) <br>
+Choose the IAM role which you created for glue <br>
+The Notebook will look like [apache_logs_transformation.ipynb](https://github.com/sonali-rajput/security-log-dashboard/blob/main/apache_logs_transformation.ipynb) 
+
+
+- The transformed data will be created after you are done running the Notebook (You can verify this in the S3 bucket ) <br>
+![db-tf](images/aws-ss/s3-db-tf-parquet-file.png) 
+<br>
+
+
+- Create another crawler for transformed data <br>
+![crawlers-raw-tf](images/aws-ss/glue-crawlers-both.png)
+<br>
+
+- Check the AWS Glue Databases tables and you will see the transformed data table as well when the crawler is done running. <br>
+![glue-tables](images/aws-ss/glue-tables-raw-tf.png)
+
+<br>
+
+5. **Set up Elasticsearch**
+- Install Elasticsearch locally or use AWS Elasticsearch Service <br>
+I did it locally and removed security authenticaation (recommended for local development only) <br>
+To remove security auth add this in config/elasticsearch.yml at the end <br>
+  ```bash
+  xpack.security.enabled: false
+  discovery.type: single-node 
+  ```
+  <br>
+
+
+6. **Load data into Elasticsearch**
+- Create an index for security logs with appropriate mappings
+- To do this run the provided data loading script: 
+```bash
+python load_to_elasticsearch.py
+```
+7. **Create Flask Application**
+- The HTML, CSS and JS code is present [here](https://github.com/sonali-rajput/security-log-dashboard/tree/main/security-dashboard) for webdashboard. <br>
+
+8. **Run the application**
+```bash
+python app.py
+```
+9. **Access the dashboard**
+- Open a browser and navigate to ```http://localhost:5000```
