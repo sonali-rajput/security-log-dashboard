@@ -1,0 +1,29 @@
+body {
+    background-color: #f8f9fa;
+    padding-bottom: 2rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    background-color: #f1f1f1;
+    font-weight: bold;
+}
+
+canvas {
+    max-height: 300px;
+}
+
+.navbar {
+    margin-bottom: 1.5rem;
+}
+
+.jumbotron {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 0.3rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}

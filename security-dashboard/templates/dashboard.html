@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Security Log Analysis</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('search') }}">Search</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1>Security Dashboard</h1>
+        
+        <!-- Summary Stats -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-header">Total Logs</div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ total_logs }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-header">Error Responses</div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ error_count }}</h5>
+                        <p class="card-text">{{ (error_count / total_logs * 100)|round(2) }}% of requests</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-header">Potential Attacks</div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ attack_count }}</h5>
+                        <p class="card-text">{{ (attack_count / total_logs * 100)|round(2) }}% of requests</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Request Volume Over Time</div>
+                    <div class="card-body">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Error Responses Over Time</div>
+                    <div class="card-body">
+                        <canvas id="errorsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Top 10 IP Addresses</div>
+                    <div class="card-body">
+                        <canvas id="topIPsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">HTTP Status Codes</div>
+                    <div class="card-body">
+                        <canvas id="statusCodesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">Top Potential Attack Patterns</div>
+                    <div class="card-body">
+                        <canvas id="attackTypesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pass data from Flask to JavaScript using hidden inputs -->
+    <div id="dashboard-data" 
+         data-top-ips="{{ top_ips|tojson }}"
+         data-status-codes="{{ status_codes|tojson }}"
+         style="display: none;">
+    </div>
+
+    <script>
+        // Fetch and render the charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get data from hidden element
+           // Top IPs chart
+fetch('/api/logs/top_ips')
+    .then(response => response.json())
+    .then(data => {
+        if (data && data.length > 0) {
+            const ipLabels = data.map(item => item.ip);
+            const ipCounts = data.map(item => item.count);
+            
+            const ipCtx = document.getElementById('topIPsChart').getContext('2d');
+            new Chart(ipCtx, {
+                type: 'bar',
+                data: {
+                    labels: ipLabels,
+                    datasets: [{
+                        label: 'Request Count',
+                        data: ipCounts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y'
+                }
+            });
+        } else {
+            document.getElementById('topIPsChart').parentNode.innerHTML = '<div class="alert alert-info">No IP address data available</div>';
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching top IPs data:", error);
+        document.getElementById('topIPsChart').parentNode.innerHTML = '<div class="alert alert-danger">Error loading IP address data</div>';
+    });
+
+// Status codes chart
+fetch('/api/logs/status_codes')
+    .then(response => response.json())
+    .then(data => {
+        if (data && data.length > 0) {
+            const statusLabels = data.map(item => item.status);
+            const statusCounts = data.map(item => item.count);
+            
+            const statusCtx = document.getElementById('statusCodesChart').getContext('2d');
+            new Chart(statusCtx, {
+                type: 'pie',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusCounts,
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(255, 205, 86, 0.5)',
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(153, 102, 255, 0.5)',
+                            'rgba(128, 0, 128, 0.5)',
+                            'rgba(0, 128, 0, 0.5)',
+                            'rgba(128, 128, 0, 0.5)',
+                            'rgba(0, 0, 128, 0.5)',
+                            'rgba(128, 0, 0, 0.5)'
+                        ]
+                    }]
+                }
+            });
+        } else {
+            document.getElementById('statusCodesChart').parentNode.innerHTML = '<div class="alert alert-info">No status code data available</div>';
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching status code data:", error);
+        document.getElementById('statusCodesChart').parentNode.innerHTML = '<div class="alert alert-danger">Error loading status code data</div>';
+    });
+            // Timeline chart
+            fetch('/api/logs/timeline')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        // Format dates for better display
+                        const labels = data.map(item => {
+                            const date = new Date(item.time);
+                            return date.toLocaleString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                hour12: true
+                            });
+                        });
+                        
+                        const ctx = document.getElementById('timelineChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Request Count',
+                                    data: data.map(item => item.count),
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    fill: true,
+                                    tension: 0.1
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        document.getElementById('timelineChart').parentNode.innerHTML = '<div class="alert alert-info">No timeline data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching timeline data:", error);
+                    document.getElementById('timelineChart').parentNode.innerHTML = '<div class="alert alert-danger">Error loading timeline data</div>';
+                });
+                
+            // Errors timeline chart
+            fetch('/api/logs/errors_timeline')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        // Format dates for better display
+                        const labels = data.map(item => {
+                            const date = new Date(item.time);
+                            return date.toLocaleString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                hour12: true
+                            });
+                        });
+                        
+                        const ctx = document.getElementById('errorsChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Error Count',
+                                    data: data.map(item => item.count),
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    fill: true,
+                                    tension: 0.1
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        document.getElementById('errorsChart').parentNode.innerHTML = '<div class="alert alert-info">No error timeline data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching errors timeline data:", error);
+                    document.getElementById('errorsChart').parentNode.innerHTML = '<div class="alert alert-danger">Error loading error timeline data</div>';
+                });
+            
+            // Attack types chart
+            fetch('/api/logs/attack_types')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        // Limit to top 10 patterns for better visualization
+                        const topData = data.slice(0, 10);
+                        
+                        // Truncate long pattern names
+                        const labels = topData.map(item => {
+                            if (item.pattern.length > 30) {
+                                return item.pattern.substring(0, 27) + '...';
+                            }
+                            return item.pattern;
+                        });
+                        
+                        const ctx = document.getElementById('attackTypesChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Count',
+                                    data: topData.map(item => item.count),
+                                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                                }]
+                            },
+                            options: {
+                                indexAxis: 'y',
+                                scales: {
+                                    x: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        document.getElementById('attackTypesChart').parentNode.innerHTML = '<div class="alert alert-info">No attack pattern data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching attack types data:", error);
+                    document.getElementById('attackTypesChart').parentNode.innerHTML = '<div class="alert alert-danger">Error loading attack pattern data</div>';
+                });
+        });
+    </script>
+</body>
+</html>
