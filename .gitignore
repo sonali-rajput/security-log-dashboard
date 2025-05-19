@@ -17,7 +17,7 @@ instance/
 
 # Logs
 
-apache_logs/
+# apache_logs/
 
 # IDE specific files
 .vscode/
@@ -29,5 +29,5 @@ apache_logs/
 *.csv
 *.tsv
 *.json
-*.txt
+# *.txt
 !requirements.txt
