@@ -141,3 +141,34 @@ python app.py
 ```
 9. **Access the dashboard**
 - Open a browser and navigate to ```http://localhost:5000```
+- Access the ```/dashboard``` 
+![Dashboard](images/dashboard/security-log-dashboard-val-resp.png) <br>
+![Dashboard](images/dashboard/security-log-dash-top-err.png)
+
+<br>
+
+- Access the ```/search``` 
+- You can use search query for example to query based on status code:```400```
+![Dashboard](images/dashboard/security-log-search-with-status.png)
+<br>
+
+- Another Example to search based on IP address
+![Dashboard](images/dashboard/security-logs-search-with-ip.png)
+<br> 
+
+### Security Metrics
+
+## The dashboard analyzes logs to identify:
+
+- Client errors (4xx status codes) indicating potential unauthorized access attempts
+- Server errors (5xx status codes) that might indicate server vulnerabilities
+- Suspicious URL patterns (e.g., paths containing SQL injection or XSS patterns)
+- Unusual access patterns by IP address
+- Temporal patterns of access (time-of-day analysis)
+
+### Resources
+
+- Sample security logs: https://github.com/elastic/examples/tree/master/Common%20Data%20Formats/apache_logs
+- AWS Glue tutorial: https://github.com/askintamanli/Data-Engineer-ETL-Project-Using-Spark-with-AWS-Glue3
+
+*This project was developed as a personal learning project to explore log analysis techniques and security visualization.*
